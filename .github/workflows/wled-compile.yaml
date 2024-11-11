@@ -1,4 +1,4 @@
-name: .github/workflows/wled-compile.yaml
+name: WLED compile
 
 on:
     workflow_dispatch:
@@ -8,9 +8,9 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.9
 
@@ -18,6 +18,8 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
     - name: Run PlatformIO
       run: |
         rm -rf /tmp/WLEDtemp/* || true
@@ -26,13 +28,12 @@ jobs:
         unzip /tmp/WLEDtemp/mm.zip -d /tmp/WLEDtemp
         find /tmp/WLEDtemp -maxdepth 1 -mindepth 1 -name "*" -type d >> /tmp/WLEDtemp/wledfoldername
         cd `cat /tmp/WLEDtemp/wledfoldername`
+        npm install
         echo '[env:custom_build]' >>platformio.ini
         echo 'extends = env:esp32dev' >>platformio.ini
-        echo 'build_flags = ${env:esp32dev.build_flags} -D RGB_ROTARY_ENCODER' >>platformio.ini
-        echo 'lib_deps = ' >>platformio.ini
-        echo '  ${env:esp32dev.lib_deps}' >>platformio.ini
-        echo '  lennarthennigs/ESP Rotary@^1.5.0' >>platformio.ini
+        echo 'build_flags = ${env:esp32dev.build_flags} -D WLED_ENABLE_MQTT -D WLED_DISABLE_ALEXA -D WLED_DISABLE_HUESYNC -D LEDPIN=27 -D WLED_MAX_USERMODS=1 -D DEFAULT_LED_COUNT=60 -D DEFAULT_LED_TYPE=TYPE_WS2812B_RGB -D DEFAULT_LED_COLOR_ORDER=COL_ORDER_GRB -D USERMOD_BATTERY' >>platformio.ini
         
+        echo 'build_unflags= -D WLED_RELEASE_NAME' >>platformio.ini
         pio run -e custom_build || pio run -e custom_build
     - name: Copy Files
       run: |
